@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Brand tokens — light default + dark, three-state (system / explicit). */
+:root {
+  --green:#042D1D; --green2:#063a25; --ember:#E86100; --gold:#DCA424; --sienna:#7E3209;
+  --cream:#F5EFE3; --paper:#FBF7EF; --ink:#241E17; --muted:#6E6558;
+  --rule:#E4D8C3; --line:#CDC2B1; --ground:#EFE7D8; --field:#FFFFFF; --field-b:#D9CDB6;
+  --font-serif:'Fraunces'; --font-sans:'Inter';
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cream:#14100B; --paper:#1a1510; --ink:#EDE4D3; --muted:#A99D8B; --rule:#3a3025; --line:#4a3f30;
+    --ground:#0e0b07; --field:#221a11; --field-b:#4a3f30; --sienna:#d8955a;
+  }
+}
+:root[data-theme="dark"] {
+  --cream:#14100B; --paper:#1a1510; --ink:#EDE4D3; --muted:#A99D8B; --rule:#3a3025; --line:#4a3f30;
+  --ground:#0e0b07; --field:#221a11; --field-b:#4a3f30; --sienna:#d8955a;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; border-radius: 3px; }
+
+/* rich text from the parsed content (Description / Example inner HTML) */
+.rich b, .rich strong { font-weight: 600; color: var(--ink); }
+.rich i, .rich em { font-style: italic; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
