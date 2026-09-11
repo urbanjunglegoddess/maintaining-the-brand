@@ -103,7 +103,7 @@ publish a new version. Existing answers stay valid because they're keyed by
 ## What's left
 
 - Connect Supabase, then Stripe — [docs/CONNECTING.md](docs/CONNECTING.md).
-- Drop the Fraunces/Inter TTFs into `public/fonts/` for the PDF.
+- Drop the Fraunces/Inter TTFs into `assets/fonts/` for the PDF.
 - Set the price and write the listing.
 - Later: image uploads for moodboards, an in-app template editor, and the rest
   of the Root System tools behind the same login.

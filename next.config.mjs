@@ -9,5 +9,11 @@ const nextConfig = {
   // Pin file tracing to this project so a lockfile elsewhere on the machine
   // can't be mistaken for the workspace root.
   outputFileTracingRoot: dir,
+  // The PDF route reads the brand fonts off disk at runtime. Nothing imports
+  // them, so tracing can't infer them — they must be listed explicitly or the
+  // serverless function ships without them and silently uses fallback fonts.
+  outputFileTracingIncludes: {
+    "/api/export/pdf": ["./assets/fonts/**/*"],
+  },
 };
 export default nextConfig;

@@ -134,17 +134,31 @@ The export works today using the PDF standard fonts. To use the book's real
 typefaces, download the **static TTFs** and drop them in:
 
 ```
-public/fonts/Fraunces-Regular.ttf
-public/fonts/Fraunces-SemiBold.ttf
-public/fonts/Inter-Regular.ttf
-public/fonts/Inter-SemiBold.ttf
-public/fonts/Inter-Italic.ttf      (optional)
+assets/fonts/Fraunces-Regular.ttf
+assets/fonts/Fraunces-SemiBold.ttf
+assets/fonts/Inter-Regular.ttf
+assets/fonts/Inter-SemiBold.ttf
+assets/fonts/Inter-Italic.ttf      (optional)
 ```
 
-Both families are SIL Open Font License, so they can be embedded in a product
-you sell. The export picks them up automatically on the next deploy — there is
-no code change and no setting. If only some are present it stays on the
-fallbacks rather than mixing metrics.
+Get the **static** TTFs from Google Fonts — not the variable or woff2 builds,
+which react-pdf can't read. Both families are SIL Open Font License, so they
+can be embedded in a product you sell. The export picks them up automatically
+on the next deploy — no code change, no setting. If only some are present it
+stays on the fallbacks rather than mixing metrics.
+
+**Not `public/`.** On Vercel, `public/` is served by the CDN and isn't bundled
+into the serverless function, so reading it from disk there always misses.
+`assets/fonts/` is pulled into the function explicitly by
+`outputFileTracingIncludes` in `next.config.mjs`.
+
+To confirm the real fonts are in use, the export response carries an
+`x-pdf-fonts` header — `embedded` or `fallback`:
+
+```bash
+curl -sI -X POST https://your-domain.com/api/export/pdf \
+  -H 'content-type: application/json' -d '{}' | grep -i x-pdf-fonts
+```
 
 ---
 
@@ -186,6 +200,7 @@ fallbacks rather than mixing metrics.
 | Gating is on                              | 🔒 beside sections in the sidebar             |
 | The webhook fired                         | A row in the `entitlements` table             |
 | A buyer got in                            | `/welcome` says "The whole book is open."     |
+| Brand fonts are embedded in the PDF       | `x-pdf-fonts: embedded` on the export response |
 
 If someone pays and stays locked out, the webhook is the thing to look at
 first — Stripe's dashboard shows every delivery attempt and its response. The

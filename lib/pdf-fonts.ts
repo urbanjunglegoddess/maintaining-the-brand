@@ -8,13 +8,19 @@ import { Font } from "@react-pdf/renderer";
  *
  * react-pdf can't read woff2, so the export ships on its built-in Times/
  * Helvetica until real font files are present. To switch to the book's actual
- * typefaces, drop these TTFs into public/fonts/ and redeploy — no code change:
+ * typefaces, drop these TTFs into assets/fonts/ and redeploy — no code change:
  *
- *   public/fonts/Fraunces-Regular.ttf
- *   public/fonts/Fraunces-SemiBold.ttf
- *   public/fonts/Inter-Regular.ttf
- *   public/fonts/Inter-SemiBold.ttf
- *   public/fonts/Inter-Italic.ttf        (optional)
+ *   assets/fonts/Fraunces-Regular.ttf
+ *   assets/fonts/Fraunces-SemiBold.ttf
+ *   assets/fonts/Inter-Regular.ttf
+ *   assets/fonts/Inter-SemiBold.ttf
+ *   assets/fonts/Inter-Italic.ttf        (optional)
+ *
+ * Deliberately NOT public/. On Vercel, public/ is served by the CDN and is not
+ * traced into the serverless function bundle, so an fs read of it there always
+ * misses — the export would silently stay on the fallback fonts forever.
+ * assets/ is pulled in explicitly by outputFileTracingIncludes in
+ * next.config.mjs, which is what guarantees these files reach the function.
  *
  * Both are free: Fraunces and Inter are SIL Open Font License, so they can be
  * embedded in a product you sell. Download the static TTFs from Google Fonts.
@@ -22,7 +28,7 @@ import { Font } from "@react-pdf/renderer";
 
 export type FontSet = { display: string; body: string; embedded: boolean };
 
-const DIR = path.join(process.cwd(), "public", "fonts");
+const DIR = path.join(process.cwd(), "assets", "fonts");
 
 function file(name: string): string | null {
   try {

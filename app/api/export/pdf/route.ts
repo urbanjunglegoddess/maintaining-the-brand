@@ -76,6 +76,10 @@ export async function POST(req: Request) {
         "content-type": "application/pdf",
         "content-disposition": `attachment; filename="${name}"`,
         "cache-control": "no-store",
+        // Says whether the brand typefaces were actually embedded. Without
+        // this the fallback is invisible — the PDF renders either way, just
+        // in the wrong fonts. See assets/fonts/README.md.
+        "x-pdf-fonts": fonts.embedded ? "embedded" : "fallback",
       },
     });
   } catch (err) {
