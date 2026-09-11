@@ -1,12 +1,15 @@
 # Maintaining the Brand — Web App
 
-The interactive brand workbook, upgraded from a single web page into a real product:
-Next.js + React + TypeScript, accounts and cloud-synced answers, one-time-purchase access,
-and a branded PDF export. An Urban Jungle Goddess product.
+The interactive brand workbook: 16 parts, 101 guided sections, 382 things the
+reader writes. Next.js + React + TypeScript, with accounts, cloud-synced
+answers, one-time-purchase access, and a branded PDF export.
 
-> **Status: Phase 0 scaffold.** Runs today on the seeded content with answers saved in the
-> browser — no backend required. Auth, payments, and export are stubbed and clearly marked
-> for the phases that wire them. Phase 1 is the next thing to wire.
+An Urban Jungle Goddess product.
+
+> **Status: complete and running.** The whole application is built. It works
+> today with no backend at all — no Supabase account, no Stripe account,
+> nothing to sign up for. Adding those services later is an environment-variable
+> change, not a code change. See **[docs/CONNECTING.md](docs/CONNECTING.md)**.
 
 ---
 
@@ -14,62 +17,93 @@ and a branded PDF export. An Urban Jungle Goddess product.
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000  → redirects to /workbook
+npm run dev        # http://localhost:3000
 ```
 
-You'll get the full workbook — 16 parts, 101 sections, 382 fields — navigable, fillable,
-with a live progress bar. Answers persist in `localStorage` (Phase 0).
+You get the full workbook, navigable and fillable, with a live progress bar and
+a real PDF download. Answers save to `localStorage`.
+
+## How it degrades
+
+Every external service sits behind a flag in [`lib/config.ts`](lib/config.ts).
+Nothing is stubbed or commented out — the real code path runs, and falls back
+when the keys are missing.
+
+| Service  | Without it                              | With it                                  |
+| -------- | --------------------------------------- | ---------------------------------------- |
+| Supabase | No sign-in; answers in this browser.    | Accounts; answers synced across devices. |
+| Stripe   | Nothing locked; the whole book is open. | Free sample + paid unlock.               |
+| Fonts    | PDF uses Times/Helvetica.               | PDF uses Fraunces + Inter.               |
+
+That's what makes the app sellable in stages: it's usable as a free tool the
+day it deploys, and becomes a product when Stripe is added.
 
 ## Tech
 
-Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Supabase (Auth + Postgres,
-Phase 1) · Stripe Checkout one-time (Phase 2) · @react-pdf/renderer (Phase 3) · Vercel.
+Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Supabase
+(Auth + Postgres + RLS) · Stripe Checkout, one-time · @react-pdf/renderer ·
+Vercel.
 
 ## Structure
 
 ```
 app/
-  page.tsx                     → redirects to /workbook (becomes the marketing page in Phase 4)
-  workbook/page.tsx            → renders the workbook from seeded content
-  api/answers/route.ts         → PHASE 1: per-user answer sync
-  api/checkout/route.ts        → PHASE 2: create Stripe session
-  api/stripe/webhook/route.ts  → PHASE 2: verify + grant entitlement (the only unlock path)
+  page.tsx                     → landing / sales page
+  workbook/page.tsx            → the workbook; gating happens here, server-side
+  login/page.tsx               → magic-link + Google sign-in
+  account/page.tsx             → profile, access status, sign out
+  welcome/page.tsx             → post-purchase landing (webhook-aware)
+  auth/callback/route.ts       → exchanges the sign-in code for a session
+  auth/signout/route.ts
+  api/answers/route.ts         → GET all / PUT batch / DELETE, per user
+  api/checkout/route.ts        → creates a Stripe Checkout session
+  api/stripe/webhook/route.ts  → verifies the signature, grants the entitlement
+  api/export/pdf/route.ts      → renders the filled workbook to PDF
 components/
-  Workbook.tsx                 → sidebar nav + section view + progress
-  fields/Field.tsx             → one renderer per field type (ported from v1)
+  Workbook.tsx                 → sidebar, section view, progress, export
+  UnlockPanel.tsx              → what a locked section shows instead
+  AuthForm.tsx                 → email link + Google
+  fields/Field.tsx             → one renderer per field type
+  pdf/WorkbookPdf.tsx          → the PDF document
 lib/
-  types.ts                     → the content + answer type system
-  content.ts                   → loads the workbook (JSON now → book_content table later)
-  store.ts                     → answer store (localStorage now → /api/answers later)
-  supabase/{server,client}.ts  → PHASE 1 stubs
+  config.ts                    → which services are on. The switchboard.
+  types.ts                     → content + answer types
+  content.ts                   → loads the book (DB if present, bundle if not)
+  sections.ts                  → flatten helper, kept free of content imports
+  preview.ts                   → what's free, and how paid content is stripped
+  store.ts                     → answers: localStorage or the API, same interface
+  auth.ts / entitlement.ts     → who they are, what they're allowed
+  supabase/{server,client}.ts  → clients, null when unconfigured
+  stripe.ts · pdf-fonts.ts · answers-format.ts
 content/book_data.json         → the parsed workbook (source of truth)
-scripts/seed-content.ts        → PHASE 1: seed book_content
-supabase/migrations/0001_init.sql → tables + Row-Level Security
+scripts/seed-content.ts        → publish the book into book_content
+supabase/migrations/0001_init.sql
+middleware.ts                  → refreshes the session cookie
 ```
+
+## Two things worth knowing
+
+**Locked content never ships.** Paid sections are removed on the server before
+the page is rendered — `lib/preview.ts` replaces them with a title and a lock.
+It is not a CSS trick. With gating on, the payload drops from ~110KB to ~21KB
+for a reader who hasn't bought it.
+
+**Only the webhook grants access.** `entitlements` has no client-writable
+policy at all. The Stripe webhook verifies the signature and writes with the
+service-role key. Nothing the browser sends can create an entitlement.
 
 ## The content is data
 
-`content/book_data.json` is generated by the parser from the 156-page book
-(`parse_book.py` in the workbook project). To update the workbook later: re-run the parser,
-replace this file, and (Phase 1+) run `npm run seed` to publish a new `book_content` version.
-Answers stay valid because they're keyed by `section` + `field_idx`, not by content.
+`content/book_data.json` is generated from the 156-page book by the parser
+(`parse_book.py` in the workbook project). To revise the book: re-run the
+parser, replace the file, and — once Supabase is connected — `npm run seed` to
+publish a new version. Existing answers stay valid because they're keyed by
+`section` + `field_idx`, not by content.
 
-## Roadmap
+## What's left
 
-| Phase | Adds | Needs |
-|------|------|-------|
-| **0** ✅ | Scaffold, content, field renderers, local save | — |
-| **1** | Supabase auth (email + Google), answers synced per user, RLS, dashboard | Supabase project |
-| **2** | Stripe one-time Checkout, webhook → entitlement, gated sections. **First sellable build.** | Stripe account + price |
-| **3** | Server-rendered branded PDF export (real download) | — |
-| **4** | Public landing/sales page, receipt email, domain, analytics, launch | Domain |
-| **5** (later) | More Root System tools behind one login, image uploads, in-app template editor | — |
-
-## Wiring a phase
-
-1. Install that phase's deps (see the `//` note in `package.json`).
-2. Copy `.env.example` → `.env.local` and fill the keys for that phase (into Vercel/Supabase for prod — never commit them).
-3. Uncomment the marked code in the relevant stub files.
-
-See the **Brand Web App Blueprint** (the scope document) for the full architecture, data model,
-purchase flow, and security model.
+- Connect Supabase, then Stripe — [docs/CONNECTING.md](docs/CONNECTING.md).
+- Drop the Fraunces/Inter TTFs into `public/fonts/` for the PDF.
+- Set the price and write the listing.
+- Later: image uploads for moodboards, an in-app template editor, and the rest
+  of the Root System tools behind the same login.

@@ -10,9 +10,13 @@
     "seed": "tsx scripts/seed-content.ts"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.9.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.116.0",
     "next": "^15.5.25",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@types/node": "^22",
@@ -24,8 +28,8 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7"
   },
-  "//": "Phase 1 adds: @supabase/ssr @supabase/supabase-js. Phase 2 adds: stripe. Phase 3 adds: @react-pdf/renderer. Installed only when that phase is wired.",
   "engines": {
     "node": ">=18.18"
-  }
+  },
+  "description": "The Maintaining the Brand interactive workbook — runs standalone; Supabase and Stripe connect via env vars."
 }
